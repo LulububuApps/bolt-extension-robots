@@ -26,17 +26,28 @@ class RobotsExtension extends SimpleExtension
     public function robotsTxt(Application $app)
     {
         $config = $this->getConfig();
+
         if ($config['enabled'] === false) {
             return null;
         }
 
-        $rules = false;
+        $maintenanceMode = $app['config']->get('general/maintenance_mode');
+        $cacheKey        = 'bolt.robots.txt';
+        $configRules     = $config['rules'];
+        $rules           = false;
+
+        if ($maintenanceMode) {
+            $cacheKey    = 'bolt.maintenance.robots.txt';
+            $configRules = $config['maintenance_rules'];
+        }
+
         if ($config['cache']) {
-            $rules = $app['cache']->fetch('bolt.robots.txt');
+            $rules = $app['cache']->fetch($cacheKey);
         }
         if ($rules === false) {
-            $rules = $this->compileRobotsTxt($config['rules'], $config['sitemap']);
-            $app['cache']->save('bolt.robots.txt', $rules, 3600);
+            $rules = $this->compileRobotsTxt($configRules, $config['sitemap']);
+
+            $app['cache']->save($cacheKey, $rules, 3600);
         }
 
         return $rules;
@@ -52,16 +63,16 @@ class RobotsExtension extends SimpleExtension
     {
         $render = '';
         foreach ($rules as $key => $value) {
-            $render .= "User-agent: $key\n";
-            $disallows = new ParameterBag((array) $value);
+            $render    .= "User-agent: $key\n";
+            $disallows = new ParameterBag((array)$value);
             foreach ($disallows->all() as $disallow) {
-                $render .= sprintf("Disallow: %s\n", (string) $disallow);
+                $render .= sprintf("Disallow: %s\n", (string)$disallow);
             }
             $render .= "\n";
         }
 
         if ($sitemap !== null) {
-            $render .= sprintf("Sitemap: %s\n", (string) $sitemap);
+            $render .= sprintf("Sitemap: %s\n", (string)$sitemap);
         }
 
         $response = new Response($render);
@@ -88,10 +99,11 @@ class RobotsExtension extends SimpleExtension
     protected function getDefaultConfig()
     {
         return [
-            'enabled' => true,
-            'cache'   => true,
-            'rules'   => [],
-            'sitemap' => null
+            'enabled'           => true,
+            'cache'             => true,
+            'rules'             => [],
+            'maintenance_rules' => [],
+            'sitemap'           => null,
         ];
     }
 }

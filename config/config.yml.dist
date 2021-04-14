@@ -14,5 +14,9 @@ cache: true
 #    BadBot:
 #        - /
 
+#maintenance_rules:
+#    '*':
+#        '/'
+
 ## Absolute path to XML sitemap file.
 # sitemap: http://www.example.com/sitemap.xml
